@@ -109,7 +109,26 @@ Reglas de asignación:
 
 {stories_context}
 
-La descripción debe ser útil para quien trabaje en el ticket, incluyendo contexto relevante de la conversación.
+Reglas de formato para la descripción (IMPORTANTE):
+- Usar markdown limpio: ## para secciones, **texto** para negritas, - para bullets
+- NO usar ** dentro de bullets (ej: "- **Campo:** valor" está MAL → usar "- Campo: valor")
+- Estructura recomendada para bugs:
+  ## Problema
+  Descripción clara del bug
+  ## Pasos para reproducir
+  1. Paso uno
+  2. Paso dos
+  ## Comportamiento esperado
+  Lo que debería pasar
+- Estructura recomendada para tareas/historias:
+  ## Contexto
+  Resumen del pedido
+  ## Detalles
+  - Detalle 1
+  - Detalle 2
+- Mantener la descripción concisa y enfocada
+- No incluir secciones de "Asignación" ni "Reportado por" en la descripción (eso va en campos separados)
+
 Responde siempre en español.
 """
 

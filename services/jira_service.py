@@ -128,17 +128,103 @@ def get_headers() -> Dict[str, str]:
 def _base_url() -> str:
     return f"https://api.atlassian.com/ex/jira/{JIRA_CLOUD_ID}"
 
+def _parse_inline(text: str) -> List[Dict[str, Any]]:
+    """Parse inline markdown (bold, italic, code) into ADF text nodes."""
+    import re
+    nodes = []
+    # Pattern: **bold**, *italic*, `code`
+    pattern = re.compile(r'(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)')
+    last_end = 0
+    for match in pattern.finditer(text):
+        # Add plain text before this match
+        if match.start() > last_end:
+            plain = text[last_end:match.start()]
+            if plain:
+                nodes.append({"type": "text", "text": plain})
+        if match.group(2):  # **bold**
+            nodes.append({"type": "text", "text": match.group(2), "marks": [{"type": "strong"}]})
+        elif match.group(3):  # *italic*
+            nodes.append({"type": "text", "text": match.group(3), "marks": [{"type": "em"}]})
+        elif match.group(4):  # `code`
+            nodes.append({"type": "text", "text": match.group(4), "marks": [{"type": "code"}]})
+        last_end = match.end()
+    # Remaining text
+    if last_end < len(text):
+        remaining = text[last_end:]
+        if remaining:
+            nodes.append({"type": "text", "text": remaining})
+    return nodes if nodes else [{"type": "text", "text": text}]
+
+
 def _text_to_adf(text: str) -> Dict[str, Any]:
-    paragraphs = text.split("\n") if text else [""]
+    """Convert markdown-like text to Atlassian Document Format (ADF)."""
+    import re
+    lines = text.split("\n") if text else [""]
     content = []
-    for para in paragraphs:
-        if para.strip():
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+
+        # Empty line → skip (don't add empty paragraphs between blocks)
+        if not stripped:
+            i += 1
+            continue
+
+        # Heading: ## Text or ### Text
+        heading_match = re.match(r'^(#{1,6})\s+(.+)$', stripped)
+        if heading_match:
+            level = len(heading_match.group(1))
             content.append({
-                "type": "paragraph",
-                "content": [{"type": "text", "text": para}]
+                "type": "heading",
+                "attrs": {"level": level},
+                "content": _parse_inline(heading_match.group(2))
             })
-        else:
-            content.append({"type": "paragraph", "content": []})
+            i += 1
+            continue
+
+        # Horizontal rule: --- or ***
+        if re.match(r'^(-{3,}|\*{3,})$', stripped):
+            content.append({"type": "rule"})
+            i += 1
+            continue
+
+        # Bullet list: collect consecutive lines starting with - or *
+        if re.match(r'^[-*]\s+', stripped):
+            list_items = []
+            while i < len(lines) and re.match(r'^\s*[-*]\s+', lines[i]):
+                item_text = re.sub(r'^\s*[-*]\s+', '', lines[i]).strip()
+                list_items.append({
+                    "type": "listItem",
+                    "content": [{"type": "paragraph", "content": _parse_inline(item_text)}]
+                })
+                i += 1
+            content.append({"type": "bulletList", "content": list_items})
+            continue
+
+        # Ordered list: collect consecutive lines starting with 1. 2. etc.
+        if re.match(r'^\d+\.\s+', stripped):
+            list_items = []
+            while i < len(lines) and re.match(r'^\s*\d+\.\s+', lines[i]):
+                item_text = re.sub(r'^\s*\d+\.\s+', '', lines[i]).strip()
+                list_items.append({
+                    "type": "listItem",
+                    "content": [{"type": "paragraph", "content": _parse_inline(item_text)}]
+                })
+                i += 1
+            content.append({"type": "orderedList", "content": list_items})
+            continue
+
+        # Regular paragraph with inline formatting
+        content.append({
+            "type": "paragraph",
+            "content": _parse_inline(stripped)
+        })
+        i += 1
+
+    if not content:
+        content = [{"type": "paragraph", "content": [{"type": "text", "text": ""}]}]
+
     return {"version": 1, "type": "doc", "content": content}
 
 # =============================================================================
