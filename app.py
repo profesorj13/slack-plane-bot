@@ -35,6 +35,6 @@ def global_error_handler(error, body, logger):
 
 
 if __name__ == "__main__":
-    logger.info("Starting Plane Bot...")
+    logger.info("Starting Jira Bot...")
     handler = SocketModeHandler(app, SLACK_APP_TOKEN)
     handler.start()
