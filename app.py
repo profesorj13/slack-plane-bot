@@ -35,6 +35,8 @@ def global_error_handler(error, body, logger):
 
 
 if __name__ == "__main__":
-    logger.info("Starting Jira Bot...")
+    from config import JIRA_EMAIL, JIRA_API_TOKEN
+    token_preview = f"{JIRA_API_TOKEN[:8]}...{JIRA_API_TOKEN[-8:]}" if JIRA_API_TOKEN and len(JIRA_API_TOKEN) > 16 else "NOT SET"
+    logger.info(f"Starting Jira Bot... (email={JIRA_EMAIL}, token={token_preview}, len={len(JIRA_API_TOKEN) if JIRA_API_TOKEN else 0})")
     handler = SocketModeHandler(app, SLACK_APP_TOKEN)
     handler.start()
