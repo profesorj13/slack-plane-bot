@@ -164,7 +164,7 @@ Analiza el contexto y crea un ticket apropiado.
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-5-latest",
+            model="claude-sonnet-4-20250514",
             max_tokens=1024,
             system=system,
             tools=TOOLS,
