@@ -26,10 +26,14 @@ def handle_mention(event: dict, say: Callable, client) -> None:
 
     logger.info(f"Processing mention from {user_id}: {text[:50]}...")
 
-    say(
-        text="Procesando tu solicitud...",
-        thread_ts=thread_ts
-    )
+    try:
+        result = say(
+            text="Procesando tu solicitud...",
+            thread_ts=thread_ts
+        )
+        logger.info(f"Sent 'processing' message: {result}")
+    except Exception as e:
+        logger.error(f"Failed to send 'processing' message: {e}")
 
     # Get user info
     requester = get_user_info(client, user_id)
@@ -64,10 +68,18 @@ def handle_mention(event: dict, say: Callable, client) -> None:
         if ticket.get("issue_type"):
             response += f"\nTipo: {ticket.get('issue_type')}"
 
-        say(text=response, thread_ts=thread_ts)
+        try:
+            result_msg = say(text=response, thread_ts=thread_ts)
+            logger.info(f"Sent success response: {result_msg}")
+        except Exception as e:
+            logger.error(f"Failed to send success response: {e}")
     else:
         error = result.get("error", "Error desconocido")
-        say(
-            text=f"No pude crear el ticket: {error}",
-            thread_ts=thread_ts
-        )
+        try:
+            result_msg = say(
+                text=f"No pude crear el ticket: {error}",
+                thread_ts=thread_ts
+            )
+            logger.info(f"Sent error response: {result_msg}")
+        except Exception as e:
+            logger.error(f"Failed to send error response: {e}")

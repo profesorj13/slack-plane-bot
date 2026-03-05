@@ -6,12 +6,24 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from config import SLACK_BOT_TOKEN, SLACK_APP_TOKEN
 from handlers.mention_handler import handle_mention
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging - DEBUG for socket mode to see all events
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Reduce noise from httpx/httpcore but keep slack_bolt debug
+logging.getLogger("httpx").setLevel(logging.INFO)
+logging.getLogger("httpcore").setLevel(logging.INFO)
+
 # Initialize the Slack app
-app = App(token=SLACK_BOT_TOKEN)
+app = App(token=SLACK_BOT_TOKEN, logger=logger)
+
+
+@app.middleware
+def log_all_events(body, next):
+    """Log every incoming event for debugging."""
+    event_type = body.get("event", {}).get("type", "unknown")
+    logger.info(f">>> Incoming event: {event_type} | keys: {list(body.keys())}")
+    next()
 
 
 @app.event("app_mention")
